@@ -1,0 +1,54 @@
+1. plant running under PLC control
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS  8.40 (SP  6.7)  CHWR 11.10  CW 28.3/32.1  OAT 30.9  cap  77.5%  Q 387.5 kW  load 332.5 kW  P  86.6 kW  COP 4.48  Pe/Pc 354/ 864 kPa  alarm 0 -  trips 0  starts 1
+2. setpoint change via S7 DB1 (reset off, SP 8.0)
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS  8.30 (SP  8.0)  CHWR 11.10  CW 28.4/32.2  OAT 31.0  cap  78.8%  Q 394.0 kW  load 334.0 kW  P  88.5 kW  COP 4.45  Pe/Pc 353/ 867 kPa  alarm 0 -  trips 0  starts 1
+3. cooling tower failure -> high condenser pressure trip
+fault tower ON (mask 0b001)
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp off  CHWS  7.60 (SP  8.0)  CHWR 11.10  CW 46.6/50.2  OAT 31.5  cap  65.0%  Q 324.9 kW  load 346.8 kW  P 123.1 kW  COP 2.64  Pe/Pc 348/1399 kPa  alarm 3 high cond pressure  trips 1  starts 1
+   lockout after 3 trips (auto-reset every 30 s while fault persists)
+  ok: state FAULT      enable ON   pump ON  flow 24.0 l/s  comp off  CHWS 11.10 (SP  8.0)  CHWR 11.80  CW 59.1/59.1  OAT 28.1  cap   0.0%  Q   0.0 kW  load 268.3 kW  P   0.0 kW  COP 0.00  Pe/Pc 429/1659 kPa  alarm 103 LOCKOUT (HMI reset needed)  trips 3  starts 4
+4. clear fault, HMI reset -> plant restarts
+fault tower off (mask 0b000)
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS 12.10 (SP  8.0)  CHWR 12.50  CW 37.3/38.4  OAT 23.7  cap  22.4%  Q 112.0 kW  load 191.1 kW  P  32.3 kW  COP 3.46  Pe/Pc 416/1030 kPa  alarm 0 -  trips 1  starts 6
+5. CHW pump failure -> flow loss, PLC pump fault
+fault pump ON (mask 0b010)
+  ok: state FAULT      enable ON   pump off flow  2.5 l/s  comp off  CHWS 12.00 (SP  8.0)  CHWR 12.50  CW 35.5/35.7  OAT 23.4  cap  14.1%  Q  14.1 kW  load 189.2 kW  P   3.9 kW  COP 3.60  Pe/Pc 417/ 955 kPa  alarm 101 pump/no flow  trips 2  starts 6
+fault pump off (mask 0b000)
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS 12.30 (SP  8.0)  CHWR 12.70  CW 24.6/25.6  OAT 21.8  cap  20.7%  Q 103.5 kW  load 176.1 kW  P  17.1 kW  COP 6.04  Pe/Pc 420/ 717 kPa  alarm 0 -  trips 0  starts 7
+6. Modbus comm loss (stop chiller container) -> PLC comm fault
+ Container hvac-sim-chiller-1 Paused 
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS 12.30 (SP  8.0)  CHWR 12.70  CW 24.5/25.5  OAT 21.7  cap  21.0%  Q 105.0 kW  load 175.5 kW  P  17.3 kW  COP 6.08  Pe/Pc 419/ 715 kPa  alarm 102 Modbus comm loss  trips 0  starts 7
+ Container hvac-sim-chiller-1 Unpaused 
+  ok: state RUNNING    enable ON   pump ON  flow 24.0 l/s  comp ON   CHWS 12.30 (SP  8.0)  CHWR 12.70  CW 24.4/25.4  OAT 21.2  cap  21.4%  Q 107.0 kW  load 171.9 kW  P  17.4 kW  COP 6.13  Pe/Pc 419/ 713 kPa  alarm 0 -  trips 0  starts 7
+ALL SCENARIOS PASSED
+EXIT 0
+plc-1  | 2026-10-23 01:32:26,665 plc INFO state OFF -> START_PUMP
+plc-1  | 2026-10-23 01:32:30,163 plc INFO state START_PUMP -> PROVE_FLOW
+plc-1  | 2026-10-23 01:32:35,165 plc INFO state PROVE_FLOW -> RUNNING
+plc-1  | 2026-10-23 01:37:54,291 plc WARNING chiller trip, code 3 (1 in last hour)
+plc-1  | 2026-10-23 01:38:24,303 plc INFO auto-reset of chiller alarm 3
+plc-1  | 2026-10-23 01:38:54,315 plc INFO auto-reset of chiller alarm 3
+plc-1  | 2026-10-23 01:39:24,827 plc WARNING chiller trip, code 3 (2 in last hour)
+plc-1  | 2026-10-23 01:39:54,839 plc INFO auto-reset of chiller alarm 3
+plc-1  | 2026-10-23 01:40:24,851 plc WARNING chiller trip, code 3 (3 in last hour)
+plc-1  | 2026-10-23 01:40:24,852 plc ERROR chiller locked out after 3 trips, HMI reset required
+plc-1  | 2026-10-23 01:40:24,852 plc INFO state RUNNING -> FAULT
+plc-1  | 2026-10-23 01:41:29,876 plc INFO HMI alarm reset
+plc-1  | 2026-10-23 01:41:29,877 plc INFO state FAULT -> OFF
+plc-1  | 2026-10-23 01:41:29,877 plc INFO state OFF -> START_PUMP
+plc-1  | 2026-10-23 01:41:30,377 plc INFO state START_PUMP -> PROVE_FLOW
+plc-1  | 2026-10-23 01:41:35,378 plc INFO state PROVE_FLOW -> RUNNING
+plc-1  | 2026-10-23 01:41:36,378 plc WARNING chiller trip, code 3 (1 in last hour)
+plc-1  | 2026-10-23 01:42:06,391 plc INFO auto-reset of chiller alarm 3
+plc-1  | 2026-10-23 01:42:46,405 plc WARNING chiller trip, code 1 (2 in last hour)
+plc-1  | 2026-10-23 01:42:46,405 plc INFO state RUNNING -> FAULT
+plc-1  | 2026-10-23 01:42:50,406 plc INFO HMI alarm reset
+plc-1  | 2026-10-23 01:42:50,406 plc INFO state FAULT -> OFF
+plc-1  | 2026-10-23 01:42:50,406 plc INFO state OFF -> START_PUMP
+plc-1  | 2026-10-23 01:42:53,407 plc INFO state START_PUMP -> PROVE_FLOW
+plc-1  | 2026-10-23 01:42:58,409 plc INFO state PROVE_FLOW -> RUNNING
+plc-1  | 2026-10-23 01:43:46,436 plc WARNING Modbus write failed: Modbus Error: [Input/Output] No response received after 3 retries, continue with next request
+plc-1  | 2026-10-23 01:43:50,442 plc ERROR Modbus comms to chiller lost: Modbus Error: [Input/Output] No response received after 3 retries, continue with next request
+plc-1  | 2026-10-23 01:43:50,917 plc INFO Modbus comms to chiller restored
+
+[exited with code 0]

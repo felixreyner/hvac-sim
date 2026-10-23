@@ -1,0 +1,32 @@
+name: hvac-sim
+
+x-image: &image
+  build: .
+  image: hvac-sim:latest
+
+services:
+  chiller:
+    <<: *image
+    command: python chiller/chiller_sim.py
+    environment:
+      DAY_LENGTH_S: "1440"     # one simulated day = 24 real minutes
+      ANTI_RECYCLE_S: "60"
+    ports:
+      - "5020:502"             # Modbus TCP (host 5020 -> chiller 502)
+
+  plc:
+    <<: *image
+    command: python plc/plc.py
+    depends_on: [chiller]
+    environment:
+      CHILLER_HOST: chiller
+      CHILLER_PORT: "502"
+      AUTOSTART: "1"           # Plant_Enable = TRUE at boot
+    ports:
+      - "102:102"              # S7comm (ISO-on-TCP), rack 0 slot 1
+
+  hmi:
+    <<: *image
+    command: python tools/hmi.py status --watch 5
+    depends_on: [plc]
+    profiles: [hmi]
