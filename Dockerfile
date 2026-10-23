@@ -8,4 +8,5 @@ RUN --mount=type=secret,id=ca,required=false \
 COPY chiller/ chiller/
 COPY plc/ plc/
 COPY tools/ tools/
+COPY hmi_web/ hmi_web/
 ENV PYTHONUNBUFFERED=1
