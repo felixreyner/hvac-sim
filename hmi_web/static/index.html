@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CP-01 Chiller Plant HMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Rajdhani:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2300f0ff' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2300f0ff'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanlines"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" class="logo"><path d="M16 2l12 7v14l-12 7-12-7V9z"/><circle cx="16" cy="16" r="4"/></svg>
+    <div>
+      <div class="brand-title">CP&#8209;01 <span>CHILLER PLANT</span></div>
+      <div class="brand-sub">SUPERVISORY HMI // S7 DB1</div>
+    </div>
+  </div>
+
+  <ol class="sequence" id="sequence">
+    <li data-s="0">OFF</li>
+    <li data-s="1">START PUMP</li>
+    <li data-s="2">PROVE FLOW</li>
+    <li data-s="3">RUNNING</li>
+    <li data-s="4">STOPPING</li>
+    <li data-s="5" class="fault">FAULT</li>
+  </ol>
+
+  <div class="links">
+    <div class="link" id="link-ws"><i></i><span>HMI</span></div>
+    <div class="link" id="link-s7"><i></i><span id="link-s7-text">S7 ---</span></div>
+    <div class="link" id="link-plc"><i></i><span>PLC SCAN <b id="hb">----</b></span></div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="alarm-banner" id="alarm-banner">
+  <span class="ab-icon">&#9888;</span>
+  <span class="ab-code" id="ab-code">A---</span>
+  <span class="ab-text" id="ab-text">No active alarm</span>
+  <button class="btn btn-reset" id="btn-reset-banner">ALARM RESET</button>
+</div>
+
+<main class="layout">
+  <!-- ===================== SCHEMATIC ===================== -->
+  <section class="panel schematic" aria-label="Plant schematic">
+    <div class="panel-head"><h2>PROCESS // CHILLED WATER LOOP</h2><span class="tag" id="mode-tag">AUTO</span></div>
+    <svg viewBox="0 0 1000 470" id="plant" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="g-cold" x1="0" x2="1"><stop offset="0" stop-color="#00f0ff"/><stop offset="1" stop-color="#3a7bff"/></linearGradient>
+        <linearGradient id="g-hot" x1="0" x2="1"><stop offset="0" stop-color="#ff9d00"/><stop offset="1" stop-color="#ff3d6e"/></linearGradient>
+        <linearGradient id="g-shell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14304a"/><stop offset="1" stop-color="#0a1726"/></linearGradient>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#1d3b57" stroke-width="2"/></pattern>
+      </defs>
+
+      <!-- condenser water loop -->
+      <g class="pipe-group cw">
+        <path class="pipe-bed" d="M215 95 H300 V178 H350"/>
+        <path class="pipe hot flow" id="p-cwl" d="M350 178 H300 V95 H215"/>
+        <path class="pipe-bed" d="M215 165 H270 V208 H350"/>
+        <path class="pipe warm flow" id="p-cwe" d="M215 165 H270 V208 H350"/>
+      </g>
+
+      <!-- chilled water loop -->
+      <g class="pipe-group chw">
+        <path class="pipe-bed" d="M650 320 H820 V150 H860"/>
+        <path class="pipe cold flow" id="p-chws" d="M650 320 H820 V150 H860"/>
+        <path class="pipe-bed" d="M860 330 H900 V420 H760"/>
+        <path class="pipe ret flow" id="p-chwr1" d="M860 330 H900 V420 H786"/>
+        <path class="pipe-bed" d="M734 420 H600 V360 H650"/>
+        <path class="pipe ret flow" id="p-chwr2" d="M734 420 H600 V365 H650"/>
+      </g>
+
+      <!-- cooling tower -->
+      <g id="tower" transform="translate(60,40)">
+        <path class="equip" d="M20 160 L35 40 H125 L140 160 Z"/>
+        <path class="fill-hatch" d="M30 120 H130 L134 150 H26 Z"/>
+        <ellipse class="equip-top" cx="80" cy="36" rx="48" ry="10"/>
+        <g transform="translate(80,30) scale(1,0.35)"><g class="fan" id="tower-fan">
+          <circle r="5"/><path d="M0 -4 L28 -9 L28 -2 Z M0 4 L-28 9 L-28 2 Z"/>
+        </g></g>
+        <g class="drops" id="tower-drops">
+          <line x1="55" y1="60" x2="55" y2="110"/><line x1="80" y1="60" x2="80" y2="110"/><line x1="105" y1="60" x2="105" y2="110"/>
+        </g>
+        <text class="eq-label" x="80" y="190">COOLING TOWER</text>
+        <text class="eq-fault" id="tower-fault" x="80" y="208">FAULT INJECTED</text>
+      </g>
+
+      <!-- chiller -->
+      <g id="chiller" transform="translate(350,140)">
+        <rect class="frame" x="-10" y="-30" width="320" height="270" rx="14"/>
+        <text class="eq-label big" x="150" y="-10">CH&#8209;01 // 500 kW R134a</text>
+        <rect class="shell cond" x="0" y="20" width="300" height="70" rx="35"/>
+        <text class="shell-label" x="150" y="50">CONDENSER</text>
+        <text class="shell-val" x="150" y="72" id="v-condp">--- kPa</text>
+        <rect class="shell evap" x="0" y="170" width="300" height="70" rx="35"/>
+        <text class="shell-label" x="150" y="200">EVAPORATOR</text>
+        <text class="shell-val" x="150" y="222" id="v-evapp">--- kPa</text>
+        <!-- compressor -->
+        <path class="refpipe" d="M60 90 V170 M240 90 V170"/>
+        <g transform="translate(150,130)">
+          <circle class="comp-ring" r="36" id="comp-ring-bg"/>
+          <circle class="comp-arc" r="36" id="comp-arc" transform="rotate(-90)"/>
+          <g class="comp-rotor" id="comp-rotor"><path d="M0 -22 L6 0 L0 22 L-6 0 Z M-22 0 L0 6 L22 0 L0 -6 Z"/></g>
+          <circle class="comp-hub" r="5"/>
+        </g>
+        <text class="mini" x="60" y="134" text-anchor="middle">EXV</text>
+        <text class="mini" x="240" y="134" text-anchor="middle">DISCH</text>
+      </g>
+
+      <!-- pump -->
+      <g id="pump" transform="translate(760,420)">
+        <circle class="equip pump-body" r="26"/>
+        <g class="impeller" id="pump-imp"><path d="M0 -18 Q8 -6 0 0 Q-8 -6 0 -18 M0 18 Q-8 6 0 0 Q8 6 0 18 M-18 0 Q-6 -8 0 0 Q-6 8 -18 0 M18 0 Q6 8 0 0 Q6 -8 18 0"/></g>
+        <text class="eq-label" x="0" y="46">CHWP&#8209;01</text>
+      </g>
+
+      <!-- building -->
+      <g id="building" transform="translate(860,90)">
+        <path class="equip" d="M0 270 V20 L40 0 L80 20 V270 Z"/>
+        <g class="windows" id="windows"></g>
+        <rect class="load-bar-bg" x="92" y="30" width="10" height="230" rx="3"/>
+        <rect class="load-bar" id="load-bar" x="92" y="260" width="10" height="0" rx="3"/>
+        <text class="eq-label" x="50" y="-12">BUILDING</text>
+      </g>
+
+      <!-- value tags -->
+      <g class="vtag hot"  transform="translate(225,58)"><rect width="110" height="26" rx="4"/><text x="8" y="17">CWL</text><text class="v" x="102" y="17" id="t-cwl">--.-</text></g>
+      <g class="vtag warm" transform="translate(222,236)"><rect width="110" height="26" rx="4"/><text x="8" y="17">CWE</text><text class="v" x="102" y="17" id="t-cwe">--.-</text></g>
+      <g class="vtag cold" transform="translate(680,286)"><rect width="104" height="26" rx="4"/><text x="8" y="17">CHWS</text><text class="v" x="96" y="17" id="t-chws">--.-</text></g>
+      <g class="vtag ret"  transform="translate(596,432)"><rect width="116" height="26" rx="4"/><text x="8" y="17">CHWR</text><text class="v" x="108" y="17" id="t-chwr">--.-</text></g>
+      <g class="vtag flowtag" transform="translate(664,352)"><rect width="120" height="26" rx="4"/><text x="8" y="17">FLOW</text><text class="v" x="112" y="17" id="t-flow">--.-</text></g>
+      <g class="vtag sp" transform="translate(680,254)"><rect width="104" height="26" rx="4"/><text x="8" y="17">SP</text><text class="v" x="96" y="17" id="t-sp">--.-</text></g>
+      <g class="vtag oat" transform="translate(20,8)"><rect width="110" height="26" rx="4"/><text x="8" y="17">OAT</text><text class="v" x="102" y="17" id="t-oat">--.-</text></g>
+
+      <!-- status lamps -->
+      <g class="lamps" transform="translate(345,410)">
+        <g class="lamp" id="l-pump"><circle cx="0" cy="0" r="6"/><text x="12" y="4">PUMP</text></g>
+        <g class="lamp" id="l-flow" transform="translate(62,0)"><circle r="6"/><text x="12" y="4">FLOW</text></g>
+        <g class="lamp" id="l-comp" transform="translate(124,0)"><circle r="6"/><text x="12" y="4">COMP</text></g>
+        <g class="lamp alarm" id="l-local" transform="translate(186,0)"><circle r="6"/><text x="12" y="4">LOCAL</text></g>
+      </g>
+    </svg>
+  </section>
+
+  <!-- ===================== CONTROLS ===================== -->
+  <section class="panel controls" aria-label="Controls">
+    <div class="panel-head"><h2>COMMAND</h2><span class="tag" id="write-tag">WRITE // DB1</span></div>
+
+    <div class="power-wrap">
+      <button class="power" id="btn-power" aria-label="Plant enable">
+        <svg viewBox="0 0 64 64"><path d="M22 18a18 18 0 1 0 20 0"/><path d="M32 10v22"/></svg>
+      </button>
+      <div class="power-info">
+        <div class="label">PLANT ENABLE <small>DB1.DBX0.0</small></div>
+        <div class="power-state" id="power-state">---</div>
+        <div class="hint" id="power-hint">Click to arm, click again to confirm</div>
+      </div>
+    </div>
+
+    <div class="ctl">
+      <div class="ctl-head"><span>CHWS SETPOINT <small>DB1.DBD2</small></span><span class="active">ACTIVE <b id="c-active-sp">--.-</b> °C</span></div>
+      <div class="stepper">
+        <button class="btn sq" data-step="-0.5">&laquo;</button>
+        <button class="btn sq" data-step="-0.1">&minus;</button>
+        <div class="readout" id="sp-readout"><span id="sp-val">--.-</span><em>°C</em></div>
+        <button class="btn sq" data-step="0.1">+</button>
+        <button class="btn sq" data-step="0.5">&raquo;</button>
+      </div>
+      <input type="range" id="sp-range" min="5" max="12" step="0.1">
+      <button class="btn apply" id="sp-apply" disabled>APPLY SETPOINT</button>
+    </div>
+
+    <div class="ctl">
+      <div class="ctl-head"><span>DEMAND LIMIT <small>DB1.DBD6</small></span><span class="active"><b id="dl-val">---</b> %</span></div>
+      <input type="range" id="dl-range" min="10" max="100" step="1">
+      <button class="btn apply" id="dl-apply" disabled>APPLY LIMIT</button>
+    </div>
+
+    <div class="ctl row">
+      <span>OAT SETPOINT RESET <small>DB1.DBX0.2</small></span>
+      <label class="switch"><input type="checkbox" id="sw-spreset"><i></i></label>
+    </div>
+
+    <button class="btn btn-reset wide" id="btn-reset">&#8635; ALARM RESET <small>DB1.DBX0.1</small></button>
+  </section>
+
+  <!-- ===================== KPIs ===================== -->
+  <section class="kpis" aria-label="Key values">
+    <div class="kpi gauge-kpi">
+      <svg viewBox="0 0 120 120" class="gauge">
+        <circle class="g-bg" cx="60" cy="60" r="48"/>
+        <circle class="g-val" id="g-cap" cx="60" cy="60" r="48"/>
+        <circle class="g-dl" id="g-dl" cx="60" cy="60" r="56"/>
+        <text x="60" y="60" class="g-num" id="k-cap">--</text>
+        <text x="60" y="80" class="g-unit">% CAP</text>
+      </svg>
+    </div>
+    <div class="kpi"><div class="k-label">COOLING</div><div class="k-val"><b id="k-cool">---</b><em>kW</em></div><div class="k-sub">LOAD <b id="k-load">---</b> kW</div><div class="bar"><i id="k-cool-bar"></i><u id="k-load-mark"></u></div></div>
+    <div class="kpi"><div class="k-label">COMPRESSOR</div><div class="k-val"><b id="k-power">---</b><em>kW</em></div><div class="k-sub">COP <b id="k-cop">-.--</b></div><div class="bar"><i id="k-cop-bar"></i></div></div>
+    <div class="kpi"><div class="k-label">ΔT CHW</div><div class="k-val"><b id="k-dt">-.-</b><em>K</em></div><div class="k-sub">FLOW <b id="k-flow">--.-</b> l/s</div></div>
+    <div class="kpi"><div class="k-label">LIFT</div><div class="k-val"><b id="k-lift">---</b><em>kPa</em></div><div class="k-sub">E <b id="k-pe">---</b> / C <b id="k-pc">---</b></div></div>
+    <div class="kpi"><div class="k-label">COUNTERS</div><div class="k-val small"><b id="k-hours">---</b><em>h</em></div><div class="k-sub">STARTS <b id="k-starts">--</b> · TRIPS/h <b id="k-trips">-</b></div></div>
+  </section>
+
+  <!-- ===================== ALARMS ===================== -->
+  <section class="panel events" aria-label="Events and alarms">
+    <div class="panel-head"><h2>EVENT LOG</h2>
+      <div class="filters" id="ev-filters">
+        <button class="chip on" data-f="all">ALL</button><button class="chip" data-f="alarm">ALARMS</button><button class="chip" data-f="cmd">OPERATOR</button>
+      </div>
+    </div>
+    <ul class="ev-list" id="ev-list"></ul>
+  </section>
+
+  <!-- ===================== TRENDS ===================== -->
+  <section class="panel trends" aria-label="Trends">
+    <div class="panel-head"><h2>TRENDS</h2>
+      <div class="filters" id="range">
+        <button class="chip" data-r="300">5 MIN</button><button class="chip on" data-r="900">15 MIN</button><button class="chip" data-r="3600">60 MIN</button>
+      </div>
+    </div>
+    <div class="chart-wrap"><div class="legend" id="lg-temp"></div><canvas id="c-temp"></canvas></div>
+    <div class="chart-wrap"><div class="legend" id="lg-kw"></div><canvas id="c-kw"></canvas></div>
+  </section>
+
+  <!-- ===================== SIMULATOR ===================== -->
+  <section class="panel sim" id="sim-panel" aria-label="Simulator fault injection">
+    <div class="panel-head"><h2>SIMULATOR // FAULT INJECTION</h2><span class="tag warn">VIA MODBUS</span></div>
+    <p class="sim-note">Test tool: writes the plant model's fault register directly. Watch the PLC react.</p>
+    <div class="faults">
+      <button class="fault-btn" data-fault="tower"><b>COOLING TOWER</b><span>Fan failure, CW temp climbs → high cond pressure trip</span><i>OFF</i></button>
+      <button class="fault-btn" data-fault="pump"><b>CHW PUMP</b><span>Pump/flow failure → flow loss, PLC FAULT 101</span><i>OFF</i></button>
+      <button class="fault-btn" data-fault="refrigerant"><b>REFRIGERANT</b><span>Low charge → low evap temp trips → lockout</span><i>OFF</i></button>
+    </div>
+  </section>
+</main>
+
+<div class="offline" id="offline"><div><b>LINK LOST</b><span id="offline-text">Reconnecting…</span></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

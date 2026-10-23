@@ -40,7 +40,8 @@ scriptable.
 ## Run
 
 ```bash
-docker compose up -d --build          # chiller + plc
+docker compose up -d --build          # chiller + plc + web HMI
+open http://localhost:8080            # web HMI (S7comm to plc:102)
 docker compose logs -f                # watch both
 docker compose run --rm hmi python tools/hmi.py status --watch   # live HMI over S7comm
 ./tools/scenario_test.sh              # end-to-end fault scenarios (~12 min)
@@ -62,6 +63,26 @@ hmi fault tower|pump|refrigerant on|off   # inject plant faults (Modbus HR10)
 ```
 
 From the host: S7 on `localhost:102` (rack 0, slot 1), chiller Modbus on `localhost:5020`.
+
+## Web HMI
+
+`hmi-web` (http://localhost:8080) is a browser HMI that talks to the PLC
+only over S7comm (snap7 client to `plc:102`, rack 0 / slot 1, DB1) and pushes
+live values to the page over a WebSocket.
+
+* Animated plant schematic (tower, chiller, CHW pump, building load), PLC
+  sequence stepper, S7 link and PLC heartbeat indicators.
+* Commands: plant start/stop (arm + confirm), CHWS setpoint, demand limit,
+  OAT setpoint reset, alarm reset. Each writes the DB1 address shown next
+  to it.
+* Trends (5/15/60 min, hover readout) and an event/alarm log built from DB1
+  changes; the server keeps an hour of history so a new browser starts
+  with data.
+* Simulator fault-injection panel (tower, pump, refrigerant). This is not a
+  PLC function: it writes the chiller model's HR10 over Modbus, like
+  `hmi.py fault`. Set `SIM_FAULTS=0` to hide it.
+
+Point it at another PLC with `PLC_HOST`, `PLC_PORT`, `PLC_RACK`, `PLC_SLOT`.
 
 ## PLC sequence
 

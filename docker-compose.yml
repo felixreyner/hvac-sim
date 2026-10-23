@@ -25,6 +25,18 @@ services:
     ports:
       - "102:102"              # S7comm (ISO-on-TCP), rack 0 slot 1
 
+  hmi-web:
+    <<: *image
+    command: python hmi_web/server.py
+    depends_on: [plc]
+    environment:
+      PLC_HOST: plc            # S7comm only: plc:102, rack 0 slot 1, DB1
+      PLC_PORT: "102"
+      CHILLER_HOST: chiller    # only for the simulator fault-injection panel
+      SIM_FAULTS: "1"          # 0 hides the panel and blocks fault writes
+    ports:
+      - "8080:8080"            # browser HMI -> http://localhost:8080
+
   hmi:
     <<: *image
     command: python tools/hmi.py status --watch 5
