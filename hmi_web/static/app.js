@@ -194,9 +194,12 @@ function renderControls(p) {
   const ps = $("power-state");
   ps.textContent = p.state_name.replace("_", " ");
   ps.className = "power-state " + (p.state_name === "FAULT" ? "fault" : p.plant_enable ? "on" : "off");
-  if (!pw.classList.contains("armed")) {
-    $("power-hint").textContent = p.plant_enable ? "Enabled. Click to arm STOP" : "Disabled. Click to arm START";
+  const st = $("btn-start");
+  if (!pw.classList.contains("armed") && !st.classList.contains("armed")) {
+    $("power-hint").textContent = p.plant_enable ? "Plant enabled. STOP acts immediately" : "Plant disabled. START needs a confirm click";
   }
+  st.disabled = p.plant_enable || p.lockout;
+  $("btn-stop").disabled = !p.plant_enable;
 
   $("c-active-sp").textContent = fmt(p.active_sp);
   if (!app.sp.dirty) { app.sp.value = p.sp_base; }
@@ -230,13 +233,17 @@ function arm(btn, label, action) {
 }
 
 function bindControls() {
+  // STOP is the safe direction: one click, no confirm. START needs a confirm click.
+  const stop = () => send("enable", false).then(() => toast("Plant STOP written"));
+  const armStart = (btn) => arm(btn, () => { $("power-hint").textContent = "Click again within 3 s to START plant"; },
+    () => send("enable", true).then(() => toast("Plant START written")));
   const pw = $("btn-power");
   pw.addEventListener("click", () => {
     const p = app.last; if (!p) return;
-    const want = !p.plant_enable;
-    arm(pw, () => { $("power-hint").textContent = `Click again within 3 s to ${want ? "START" : "STOP"} plant`; },
-      () => send("enable", want).then(() => toast(`Plant ${want ? "START" : "STOP"} sent`)));
+    if (p.plant_enable) stop(); else armStart(pw);
   });
+  $("btn-start").addEventListener("click", () => armStart($("btn-start")));
+  $("btn-stop").addEventListener("click", stop);
 
   const spR = $("sp-range");
   const setSp = (v) => {

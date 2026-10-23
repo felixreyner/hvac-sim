@@ -213,6 +213,11 @@ b { font-weight: 600; }
 .power-state.off { color: var(--dim); }
 .power-state.fault { color: var(--red); text-shadow: 0 0 12px rgba(255,46,91,.6); }
 .hint { font-size: 12px; color: var(--dim); }
+.startstop { display: flex; gap: 8px; margin-top: 10px; }
+.startstop .btn { flex: 1; padding: 9px 0; }
+.ss-start:not(:disabled) { color: var(--green); border-color: rgba(43,255,154,.5); background: rgba(43,255,154,.08); }
+.ss-start.armed { color: #120a00; background: var(--amber); border-color: var(--amber); animation: blink .5s steps(2) infinite; }
+.ss-stop:not(:disabled) { color: #fff; border-color: var(--red); background: rgba(255,46,91,.35); box-shadow: 0 0 14px rgba(255,46,91,.35); }
 
 .ctl { padding: 14px 0; border-bottom: 1px solid var(--line); }
 .ctl.row { display: flex; align-items: center; justify-content: space-between; font-family: var(--f-head); font-size: 11px; letter-spacing: .12em; color: var(--dim); }

@@ -116,6 +116,8 @@ class Gateway:
         util.set_bool(b, 0, 1, False)  # never re-assert a reset pulse the PLC already cleared
         util.set_bool(b, 0, bit, value)
         self.client.db_write(DB, 0, b)
+        if bit != 1 and util.get_bool(self.client.db_read(DB, 0, 1), 0, bit) != value:
+            raise IOError(f"PLC did not accept DB1.DBX0.{bit} := {int(value)}")
 
     def _write_real(self, offset, value):
         b = bytearray(4)
